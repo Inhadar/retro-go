@@ -1,0 +1,13 @@
+name: Build IMG
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: espressif/idf:v5.1.2
+    steps:
+      - uses: actions/checkout@v4
+      - run: python rg_tool.py --target esp32-s3-devkit build-img
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hazir-img
+          path: "*.img"
