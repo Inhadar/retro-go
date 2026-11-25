@@ -1,4 +1,4 @@
-name: Build ESP32-S3 IMG
+name: Build ESP32-S3 HEX
 
 on:
   workflow_dispatch:
@@ -15,13 +15,14 @@ jobs:
       - name: Fix Git Ownership
         run: git config --global --add safe.directory /__w/retro-go/retro-go
 
-      - name: Build IMG
+      - name: Build IMG and Convert to HEX
         run: |
           . /opt/esp/idf/export.sh
           python rg_tool.py --target esp32-s3-devkit build-img
+          esptool.py --chip esp32s3 merge_bin -o retro-go-esp32s3.hex --format hex 0x0 *.img
 
-      - name: Upload IMG
+      - name: Upload HEX
         uses: actions/upload-artifact@v4
         with:
-          name: esp32s3-img
-          path: "*.hex"
+          name: esp32s3-hex
+          path: "retro-go-esp32s3.hex"
