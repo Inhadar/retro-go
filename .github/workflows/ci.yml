@@ -1,42 +1,15 @@
-name: ci
-
-on:
-  workflow_dispatch:      # Start a workflow
-  push:
-
+name: Retro Go esp32s3 MUX edition
+on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    container: espressif/idf:v5.1.2
     steps:
-    # Remove ~18 GiB of preinstalled software to have more disk space during the build
-    - name: Cleanup runner
-      run: |
-        df -h
-        sudo rm -rf /opt/microsoft /usr/local/.ghcup /usr/local/julia* /usr/share/dotnet /usr/share/swift /usr/lib/llvm*
-        df -h
-
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        tags: retro-go:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        load: true
-
-    - name: Extract binaries from docker image
-      run: |
-        docker run --rm -v $(pwd)/build:/build retro-go:latest sh -c "cp /app/*.fw /build"
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: binaries
-        path: build/*.fw
+      - uses: actions/checkout@v4
+      - name: Build IMG
+        run: python rg_tool.py --target esp32-s3-devkit build-img
+      - name: Upload IMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: retro-go-image
+          path: "*.img"
