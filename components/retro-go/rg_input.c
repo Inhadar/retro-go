@@ -38,6 +38,21 @@ static rg_keymap_serial_t keymap_serial[] = RG_GAMEPAD_SERIAL_MAP;
 #ifdef RG_GAMEPAD_VIRT_MAP
 static rg_keymap_virt_t keymap_virt[] = RG_GAMEPAD_VIRT_MAP;
 #endif
+
+// --- EKLEME 1/3: CD74HC4067 coklayici (mux) tus haritasi ---
+#ifdef RG_GAMEPAD_MUX_MAP
+typedef struct
+{
+    rg_key_t key;
+    int channel; // mux kanali (0-15)
+} rg_keymap_mux_t;
+static const rg_keymap_mux_t keymap_mux[] = RG_GAMEPAD_MUX_MAP;
+static const gpio_num_t mux_select_pins[4] = {
+    RG_GPIO_MUX_S0, RG_GPIO_MUX_S1, RG_GPIO_MUX_S2, RG_GPIO_MUX_S3,
+};
+#endif
+// --- EKLEME 1/3 SONU ---
+
 static bool input_task_running = false;
 static uint32_t gamepad_state = -1; // _Atomic
 static uint32_t gamepad_mapped = 0;
@@ -199,6 +214,21 @@ bool rg_input_read_gamepad_raw(uint32_t *out)
     }
 #endif
 
+// --- EKLEME 2/3: mux uzerinden tus okuma (VIRT blogundan ONCE olmali) ---
+#if defined(RG_GAMEPAD_MUX_MAP)
+    for (size_t i = 0; i < RG_COUNT(keymap_mux); ++i)
+    {
+        const rg_keymap_mux_t *mapping = &keymap_mux[i];
+        // Kanal numarasini S0..S3 pinlerine yaz (S0 = en dusuk bit)
+        for (int bit = 0; bit < 4; ++bit)
+            gpio_set_level(mux_select_pins[bit], (mapping->channel >> bit) & 1);
+        rg_usleep(10); // kanalin oturmasi icin bekle
+        if (gpio_get_level(RG_GPIO_MUX_SIG) == 0) // basili = LOW
+            state |= mapping->key;
+    }
+#endif
+// --- EKLEME 2/3 SONU ---
+
 #if defined(RG_GAMEPAD_VIRT_MAP)
     for (size_t i = 0; i < RG_COUNT(keymap_virt); ++i)
     {
@@ -333,6 +363,23 @@ void rg_input_init(void)
     gpio_set_level(RG_GPIO_GAMEPAD_CLOCK, 1);
     UPDATE_GLOBAL_MAP(keymap_serial);
 #endif
+
+// --- EKLEME 3/3: mux surucusunu baslat ---
+#if defined(RG_GAMEPAD_MUX_MAP)
+    RG_LOGI("Initializing MUX gamepad driver...");
+    for (int i = 0; i < 4; ++i)
+    {
+        // gpio_reset_pin sart: GPIO40-42 varsayilan olarak JTAG fonksiyonunda olabilir
+        gpio_reset_pin(mux_select_pins[i]);
+        gpio_set_direction(mux_select_pins[i], GPIO_MODE_OUTPUT);
+        gpio_set_level(mux_select_pins[i], 0);
+    }
+    gpio_reset_pin(RG_GPIO_MUX_SIG);
+    gpio_set_direction(RG_GPIO_MUX_SIG, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(RG_GPIO_MUX_SIG, GPIO_PULLUP_ONLY);
+    UPDATE_GLOBAL_MAP(keymap_mux);
+#endif
+// --- EKLEME 3/3 SONU ---
 
 
 #if RG_BATTERY_DRIVER == 1 /* ADC */
