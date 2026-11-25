@@ -1,9 +1,19 @@
 // Target definition
-#define RG_TARGET_NAME             "ESP32-S3-DEVKIT"
+#define RG_TARGET_NAME             "ESP32-S3-MUX"
+
+// ---------------------------------------------------------------------------
+// PIN OZETI (ESP32-S3)
+//   Ortak SPI hatti : MOSI=11  SCK=12  MISO=13
+//   Ekran           : CS=10  DC=5  RST=4  (LED -> 3.3V, yazilimdan kontrol yok)
+//   SD kart         : CS=14
+//   Mux CD74HC4067  : SIG=1  S0=40  S1=41  S2=42  S3=2
+//   Ses (I2S DAC)   : BCK=15  WS=16  DATA=17  (DAC baglayinca)
+// ---------------------------------------------------------------------------
 
 // Storage
+// SD kart ekranla AYNI SPI hattini kullaniyor, bu yuzden ikisi de SPI2_HOST
 #define RG_STORAGE_ROOT             "/sd"
-#define RG_STORAGE_SDSPI_HOST       SPI3_HOST
+#define RG_STORAGE_SDSPI_HOST       SPI2_HOST
 #define RG_STORAGE_SDSPI_SPEED      SDMMC_FREQ_DEFAULT
 // #define RG_STORAGE_SDMMC_HOST       SDMMC_HOST_SLOT_1
 // #define RG_STORAGE_SDMMC_SPEED      SDMMC_FREQ_DEFAULT
@@ -16,7 +26,7 @@
 // Video
 #define RG_SCREEN_DRIVER            0   // 0 = ILI9341/ST7789
 #define RG_SCREEN_HOST              SPI2_HOST
-#define RG_SCREEN_SPEED             SPI_MASTER_FREQ_40M // SPI_MASTER_FREQ_80M
+#define RG_SCREEN_SPEED             SPI_MASTER_FREQ_40M // breadboard'da 40M, kisa kabloda 80M denenebilir
 #define RG_SCREEN_BACKLIGHT         1
 #define RG_SCREEN_WIDTH             320
 #define RG_SCREEN_HEIGHT            240
@@ -45,49 +55,64 @@
 
 
 // Input
-// Refer to rg_input.h to see all available RG_KEY_* and RG_GAMEPAD_*_MAP types
-#define RG_GAMEPAD_ADC_MAP {\
-    {RG_KEY_UP,    ADC_UNIT_1, ADC_CHANNEL_5, ADC_ATTEN_DB_11, 3072, 4096},\
-    {RG_KEY_RIGHT, ADC_UNIT_1, ADC_CHANNEL_6, ADC_ATTEN_DB_11, 1024, 3071},\
-    {RG_KEY_DOWN,  ADC_UNIT_1, ADC_CHANNEL_5, ADC_ATTEN_DB_11, 1024, 3071},\
-    {RG_KEY_LEFT,  ADC_UNIT_1, ADC_CHANNEL_6, ADC_ATTEN_DB_11, 3072, 4096},\
+// Tuslar CD74HC4067 coklayicisindan okunuyor.
+// ADC ve GPIO haritalari kaldirildi (eski pinleri ekran/mux ile cakisiyordu).
+// NOT: Mux okuma kodu rg_input.c icine ayrica eklenmeli, o yama yapilana kadar tuslar calismaz.
+
+// Mux pinleri (S0 = en dusuk bit)
+#define RG_GPIO_MUX_S0              GPIO_NUM_40
+#define RG_GPIO_MUX_S1              GPIO_NUM_41
+#define RG_GPIO_MUX_S2              GPIO_NUM_42
+#define RG_GPIO_MUX_S3              GPIO_NUM_2
+#define RG_GPIO_MUX_SIG             GPIO_NUM_1
+
+// {tus, mux kanali}
+#define RG_GAMEPAD_MUX_MAP {            \
+    {RG_KEY_UP,     6},                 \
+    {RG_KEY_DOWN,   10},                \
+    {RG_KEY_LEFT,   9},                 \
+    {RG_KEY_RIGHT,  7},                 \
+    {RG_KEY_A,      4},                 \
+    {RG_KEY_B,      1},                 \
+    {RG_KEY_START,  5},                 \
+    {RG_KEY_SELECT, 8},                 \
+    /* buton ekleyince ac:           */ \
+    /* {RG_KEY_MENU,   0}, */           \
+    /* {RG_KEY_OPTION, 2}, */           \
 }
-#define RG_GAMEPAD_GPIO_MAP {\
-    {RG_KEY_SELECT, .num = GPIO_NUM_16, .pullup = 1, .level = 0},\
-    {RG_KEY_START,  .num = GPIO_NUM_17, .pullup = 1, .level = 0},\
-    {RG_KEY_MENU,   .num = GPIO_NUM_18, .pullup = 1, .level = 0},\
-    {RG_KEY_OPTION, .num = GPIO_NUM_8,  .pullup = 1, .level = 0},\
-    {RG_KEY_A,      .num = GPIO_NUM_15, .pullup = 1, .level = 0},\
-    {RG_KEY_B,      .num = GPIO_NUM_5,  .pullup = 1, .level = 0},\
-}
 
-// Battery
-#define RG_BATTERY_DRIVER           1
-#define RG_BATTERY_ADC_UNIT         ADC_UNIT_1
-#define RG_BATTERY_ADC_CHANNEL      ADC_CHANNEL_3
-#define RG_BATTERY_CALC_PERCENT(raw) (((raw) * 2.f - 3500.f) / (4200.f - 3500.f) * 100.f)
-#define RG_BATTERY_CALC_VOLTAGE(raw) ((raw) * 2.f * 0.001f)
+// Battery (kapali)
+// Eski ayar ADC_CHANNEL_3 kullaniyordu, bu S3'te GPIO4 = ekran RST pini. Cakisma oldugu icin kapatildi.
+// #define RG_BATTERY_DRIVER           1
+// #define RG_BATTERY_ADC_UNIT         ADC_UNIT_1
+// #define RG_BATTERY_ADC_CHANNEL      ADC_CHANNEL_3
+// #define RG_BATTERY_CALC_PERCENT(raw) (((raw) * 2.f - 3500.f) / (4200.f - 3500.f) * 100.f)
+// #define RG_BATTERY_CALC_VOLTAGE(raw) ((raw) * 2.f * 0.001f)
 
 
-// Status LED
+// Status LED (bagli degilse zararsiz)
 #define RG_GPIO_LED                 GPIO_NUM_38
 
-// SPI Display (back up working)
-#define RG_GPIO_LCD_MISO            GPIO_NUM_NC
-#define RG_GPIO_LCD_MOSI            GPIO_NUM_12
-#define RG_GPIO_LCD_CLK             GPIO_NUM_48
-#define RG_GPIO_LCD_CS              GPIO_NUM_NC
-#define RG_GPIO_LCD_DC              GPIO_NUM_47
-#define RG_GPIO_LCD_BCKL            GPIO_NUM_39
-#define RG_GPIO_LCD_RST             GPIO_NUM_3
+// SPI Display
+// MISO, SD ile ayni pin (13). Ortak bus MISO ile baslatilmali ki SD calissin.
+// Ekran modulunun SDO ucunu FIZIKSEL olarak baglama (Retro-Go ekrandan veri okumaz).
+#define RG_GPIO_LCD_MISO            GPIO_NUM_13
+#define RG_GPIO_LCD_MOSI            GPIO_NUM_11
+#define RG_GPIO_LCD_CLK             GPIO_NUM_12
+#define RG_GPIO_LCD_CS              GPIO_NUM_10
+#define RG_GPIO_LCD_DC              GPIO_NUM_5
+#define RG_GPIO_LCD_BCKL            GPIO_NUM_39   // bagli degil, LED 3.3V'a sabit. Parlaklik menusu calismaz.
+#define RG_GPIO_LCD_RST             GPIO_NUM_4
 
-#define RG_GPIO_SDSPI_MISO          GPIO_NUM_9
+// SPI SD Card (ekranla ortak hat)
+#define RG_GPIO_SDSPI_MISO          GPIO_NUM_13
 #define RG_GPIO_SDSPI_MOSI          GPIO_NUM_11
-#define RG_GPIO_SDSPI_CLK           GPIO_NUM_13
-#define RG_GPIO_SDSPI_CS            GPIO_NUM_10
+#define RG_GPIO_SDSPI_CLK           GPIO_NUM_12
+#define RG_GPIO_SDSPI_CS            GPIO_NUM_14
 
 // External I2S DAC
-#define RG_GPIO_SND_I2S_BCK         41
-#define RG_GPIO_SND_I2S_WS          42
-#define RG_GPIO_SND_I2S_DATA        40
+// Eski pinler 40/41/42 mux ile cakisiyordu, 15/16/17'ye tasindi.
+#define RG_GPIO_SND_I2S_BCK         15
+#define RG_GPIO_SND_I2S_WS          16
+#define RG_GPIO_SND_I2S_DATA        17
 // #define RG_GPIO_SND_AMP_ENABLE      18
