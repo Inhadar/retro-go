@@ -16,7 +16,9 @@ jobs:
         run: git config --global --add safe.directory /__w/retro-go/retro-go
 
       - name: Build IMG
-        run: python rg_tool.py --target esp32-s3-devkit build-img
+        run: |
+          . /opt/esp/idf/export.sh
+          python rg_tool.py --target esp32-s3-devkit build-img
 
       - name: Upload IMG
         uses: actions/upload-artifact@v4
