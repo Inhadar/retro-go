@@ -1,4 +1,4 @@
-name: Build IMG
+name: Build ESP32-S3 IMG
 on: [push]
 jobs:
   build:
@@ -6,8 +6,8 @@ jobs:
     container: espressif/idf:v5.1.2
     steps:
       - uses: actions/checkout@v4
-      - run: python rg_tool.py --target esp32-s3-devkit build-img
+      - run: python rg_tool.py --target esp32s3-devkitc build-img
       - uses: actions/upload-artifact@v4
         with:
-          name: hazir-img
+          name: esp32s3-img
           path: "*.img"
