@@ -226,6 +226,26 @@ bool rg_input_read_gamepad_raw(uint32_t *out)
         if (gpio_get_level(RG_GPIO_MUX_SIG) == 0) // basili = LOW
             state |= mapping->key;
     }
+#ifdef RG_GAMEPAD_MUX_DEBUG
+    {
+        // TEST MODU: 16 kanalin hepsini tara, degisince seri porta yaz
+        static uint32_t last_low = 0xFFFFFFFF;
+        uint32_t low = 0;
+        for (int ch = 0; ch < 16; ++ch)
+        {
+            for (int bit = 0; bit < 4; ++bit)
+                gpio_set_level(mux_select_pins[bit], (ch >> bit) & 1);
+            rg_usleep(10);
+            if (gpio_get_level(RG_GPIO_MUX_SIG) == 0)
+                low |= (1u << ch);
+        }
+        if (low != last_low)
+        {
+            RG_LOGI("MUX LOW kanallar: 0x%04X (bit N = kanal N)", (unsigned)low);
+            last_low = low;
+        }
+    }
+#endif
 #endif
 // --- EKLEME 2/3 SONU ---
 
@@ -405,7 +425,11 @@ void rg_input_init(void)
     rg_input_read_gamepad_raw(NULL);
 
     // Start background polling
+    #ifdef RG_GAMEPAD_MUX_DEBUG
+    rg_task_create("rg_input", &input_task, NULL, 6 * 1024, RG_TASK_PRIORITY_6, 1);
+#else
     rg_task_create("rg_input", &input_task, NULL, 3 * 1024, RG_TASK_PRIORITY_6, 1);
+#endif
     while (gamepad_state == -1)
         rg_task_yield();
     RG_LOGI("Input ready. state=" PRINTF_BINARY_16 "\n", PRINTF_BINVAL_16(gamepad_state));
