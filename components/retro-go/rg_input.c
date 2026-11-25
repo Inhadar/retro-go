@@ -41,6 +41,16 @@ static rg_keymap_virt_t keymap_virt[] = RG_GAMEPAD_VIRT_MAP;
 
 // --- EKLEME 1/3: CD74HC4067 coklayici (mux) tus haritasi ---
 #ifdef RG_GAMEPAD_MUX_MAP
+// Basinca SIG hangi seviyeye gecer?
+//   1 = HIGH (buton kanal<->3.3V, SIG<->GND arasi direnc)  [SENIN DEVREN]
+//   0 = LOW  (buton kanal<->GND,  SIG<->3.3V arasi direnc)
+#ifndef RG_GAMEPAD_MUX_ACTIVE_LEVEL
+#define RG_GAMEPAD_MUX_ACTIVE_LEVEL 1
+#endif
+// TEST MODU acik: basili kanallari seri porta yazar. Kapatmak icin su 3 satiri sil.
+#ifndef RG_GAMEPAD_MUX_DEBUG
+#define RG_GAMEPAD_MUX_DEBUG 1
+#endif
 typedef struct
 {
     rg_key_t key;
@@ -222,8 +232,8 @@ bool rg_input_read_gamepad_raw(uint32_t *out)
         // Kanal numarasini S0..S3 pinlerine yaz (S0 = en dusuk bit)
         for (int bit = 0; bit < 4; ++bit)
             gpio_set_level(mux_select_pins[bit], (mapping->channel >> bit) & 1);
-        rg_usleep(10); // kanalin oturmasi icin bekle
-        if (gpio_get_level(RG_GPIO_MUX_SIG) == 0) // basili = LOW
+        rg_usleep(20); // kanalin oturmasi icin bekle
+        if (gpio_get_level(RG_GPIO_MUX_SIG) == RG_GAMEPAD_MUX_ACTIVE_LEVEL) // basili
             state |= mapping->key;
     }
 #ifdef RG_GAMEPAD_MUX_DEBUG
@@ -235,13 +245,13 @@ bool rg_input_read_gamepad_raw(uint32_t *out)
         {
             for (int bit = 0; bit < 4; ++bit)
                 gpio_set_level(mux_select_pins[bit], (ch >> bit) & 1);
-            rg_usleep(10);
-            if (gpio_get_level(RG_GPIO_MUX_SIG) == 0)
+            rg_usleep(20);
+            if (gpio_get_level(RG_GPIO_MUX_SIG) == RG_GAMEPAD_MUX_ACTIVE_LEVEL)
                 low |= (1u << ch);
         }
         if (low != last_low)
         {
-            RG_LOGI("MUX LOW kanallar: 0x%04X (bit N = kanal N)", (unsigned)low);
+            RG_LOGI("MUX BASILI kanallar: 0x%04X (bit N = kanal N)", (unsigned)low);
             last_low = low;
         }
     }
@@ -396,7 +406,11 @@ void rg_input_init(void)
     }
     gpio_reset_pin(RG_GPIO_MUX_SIG);
     gpio_set_direction(RG_GPIO_MUX_SIG, GPIO_MODE_INPUT);
+#if RG_GAMEPAD_MUX_ACTIVE_LEVEL
+    gpio_set_pull_mode(RG_GPIO_MUX_SIG, GPIO_PULLDOWN_ONLY);
+#else
     gpio_set_pull_mode(RG_GPIO_MUX_SIG, GPIO_PULLUP_ONLY);
+#endif
     UPDATE_GLOBAL_MAP(keymap_mux);
 #endif
 // --- EKLEME 3/3 SONU ---
