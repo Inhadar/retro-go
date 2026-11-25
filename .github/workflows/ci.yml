@@ -1,4 +1,4 @@
-name: Build ESP32-S3 BIN
+name: Build ESP32-S3 IMG
 
 on:
   workflow_dispatch:
@@ -15,14 +15,13 @@ jobs:
       - name: Fix Git Ownership
         run: git config --global --add safe.directory /__w/retro-go/retro-go
 
-      - name: Build IMG and Rename to BIN
+      - name: Build IMG
         run: |
           . /opt/esp/idf/export.sh
           python rg_tool.py --target esp32-s3-devkit build-img
-          cp *.img retro-go-esp32s3.bin
 
-      - name: Upload BIN
+      - name: Upload IMG
         uses: actions/upload-artifact@v4
         with:
-          name: esp32s3-bin
-          path: "retro-go-esp32s3.bin"
+          name: esp32s3-img
+          path: "*.img"
