@@ -62,19 +62,15 @@
 #define RG_GPIO_MUX_S3              GPIO_NUM_2
 #define RG_GPIO_MUX_SIG             GPIO_NUM_1
 
-// {tus, mux kanali}
 #define RG_GAMEPAD_MUX_MAP {            \
-    {RG_KEY_UP,     6},                 \
-    {RG_KEY_DOWN,   10},                \
-    {RG_KEY_LEFT,   9},                 \
-    {RG_KEY_RIGHT,  7},                 \
-    {RG_KEY_A,      4},                 \
-    {RG_KEY_B,      1},                 \
-    {RG_KEY_START,  5},                 \
-    {RG_KEY_SELECT, 8},                 \
-    /* buton ekleyince ac:           */ \
-    /* {RG_KEY_MENU,   0}, */           \
-    /* {RG_KEY_OPTION, 2}, */           \
+    {RG_KEY_UP,    6},                  \
+    {RG_KEY_RIGHT, 7},                  \
+    {RG_KEY_DOWN,  10},                 \
+    {RG_KEY_LEFT,  9},                  \
+    {RG_KEY_A,     4},                  \
+    {RG_KEY_B,     1},                  \
+    {RG_KEY_L,     8},                  \
+    {RG_KEY_R,     5},                  \
 }
 
 // Battery (kapali)
@@ -84,7 +80,12 @@
 // #define RG_BATTERY_ADC_CHANNEL      ADC_CHANNEL_3
 // #define RG_BATTERY_CALC_PERCENT(raw) (((raw) * 2.f - 3500.f) / (4200.f - 3500.f) * 100.f)
 // #define RG_BATTERY_CALC_VOLTAGE(raw) ((raw) * 2.f * 0.001f)
-
+#define RG_GAMEPAD_VIRT_MAP {                         \
+    {RG_KEY_SELECT, RG_KEY_B | RG_KEY_A},             \
+    {RG_KEY_START,  RG_KEY_R | RG_KEY_A},             \
+    {RG_KEY_MENU,   RG_KEY_L | RG_KEY_R},             \
+    {RG_KEY_OPTION, RG_KEY_L | RG_KEY_A},             \
+}
 
 // Status LED (bagli degilse zararsiz)
 #define RG_GPIO_LED                 GPIO_NUM_38
