@@ -8,6 +8,9 @@ extern const rg_audio_driver_t rg_audio_driver_dummy;
 extern const rg_audio_driver_t rg_audio_driver_buzzer;
 extern const rg_audio_driver_t rg_audio_driver_i2s;
 extern const rg_audio_driver_t rg_audio_driver_sdl2;
+// --- EKLEME 1/3: PDM surucusu (DAC'siz, RC filtre + yukseltici icin) ---
+extern const rg_audio_driver_t rg_audio_driver_pdm;
+// --- EKLEME 1/3 SONU ---
 
 // static const rg_audio_driver_t *drivers[] = {
 //     NULL,
@@ -21,6 +24,11 @@ static const rg_audio_sink_t sinks[] = {
 #if RG_AUDIO_USE_EXT_DAC
     {&rg_audio_driver_i2s,    1, "Ext DAC"},
 #endif
+// --- EKLEME 2/3: PDM cikisi (config.h'ta RG_AUDIO_USE_PDM 1 yazilinca aktif) ---
+#if RG_AUDIO_USE_PDM
+    {&rg_audio_driver_pdm,    0, "PDM"    },
+#endif
+// --- EKLEME 2/3 SONU ---
 #if RG_AUDIO_USE_SDL2
     {&rg_audio_driver_sdl2,   0, "SDL2"   },
 #endif
@@ -29,6 +37,13 @@ static const rg_audio_sink_t sinks[] = {
 #endif
     // {rg_audio_driver_bt_a2dp, 0, "Bluetooth"},
 };
+
+// --- EKLEME 3/3: varsayilan ses seviyesi (config.h'ta degistirilebilir) ---
+// Ilk acilista yuksek sesle hoparlor/yukseltici zorlanmasin diye dusuk tutabilirsin.
+#ifndef RG_AUDIO_DEFAULT_VOLUME
+#define RG_AUDIO_DEFAULT_VOLUME 50
+#endif
+// --- EKLEME 3/3 SONU ---
 
 #define ACQUIRE_DEVICE(timeout)                         \
     ({                                                  \
@@ -87,7 +102,7 @@ void rg_audio_init(int sampleRate)
         audio.sink = &sinks[1 % RG_COUNT(sinks)];
 
     audio.filter = (int)rg_settings_get_number(NS_GLOBAL, SETTING_FILTER, 0);
-    audio.volume = (int)rg_settings_get_number(NS_GLOBAL, SETTING_VOLUME, 50);
+    audio.volume = (int)rg_settings_get_number(NS_GLOBAL, SETTING_VOLUME, RG_AUDIO_DEFAULT_VOLUME);
     audio.sampleRate = sampleRate;
     audio.driver = audio.sink->driver;
 
