@@ -19,11 +19,14 @@
 // #define RG_STORAGE_SDMMC_SPEED      SDMMC_FREQ_DEFAULT
 // #define RG_STORAGE_FLASH_PARTITION  "vfs"
 
-// Audio
+// Audio (PDM)
 #define RG_AUDIO_USE_INT_DAC        0
 #define RG_AUDIO_USE_EXT_DAC        0
 #define RG_AUDIO_USE_PDM            1
-#define RG_AUDIO_PDM_PIN            RG_GPIO_SND_I2S_DATA // GPIO 17
+#define RG_GPIO_SND_I2S_BCK         -1
+#define RG_GPIO_SND_I2S_WS          -1
+#define RG_GPIO_SND_I2S_DATA        17
+#define RG_AUDIO_PDM_PIN            RG_GPIO_SND_I2S_DATA
 
 // Video
 #define RG_SCREEN_DRIVER            0   // 0 = ILI9341/ST7789 (ayni surucu, sadece init dizisi farkli)
